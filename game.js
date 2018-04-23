@@ -28,7 +28,7 @@ function setup(){
 	player = new playerCharacter(20, 20, 0, 0, "blue", 100, 10, 10, true)
 	gameObjects.push(player);
 
-	document.keydown = function(event){
+	document.addEventListener('keydown', function(event){
 		if (event.which == 38 || event.which == 87){ //up
 			console.log("Up");
 			upPressed = true;
@@ -42,8 +42,8 @@ function setup(){
 			console.log("Right")
 			rightPressed = true;
 		}
-	};
-	document.keyup = function(event){
+	});
+	document.addEventListener('keyup', function(event){
 		if (event.which == 38 || event.which == 87){ //up
 			console.log("Up");
 			upPressed = false;
@@ -57,7 +57,7 @@ function setup(){
 			console.log("Right")
 			rightPressed = false;
 		}
-	};
+	});
 	canvas.onmousedown = function(event) { 
 		if (event.button == 0) mousePressed = true;
 	};
@@ -107,6 +107,10 @@ function getDirection(startX, startY, endX, endY){  //i hate geometry. https://i
 	return [distX/hypotonoose, distY/hypotonoose, distX, distY];
 }
 
+function getInside(gameObject){
+	for(int i = 0, )
+}
+
 class gameObject{
 	constructor(width, height, x, y, color){
 		this.width = width;
@@ -133,6 +137,15 @@ class gameObject{
 		this.x = destX;
 		this.y = destY;
 	}
+
+	IsInside(x, y){
+		if(x > this.x && x < this.x + this.width){
+			if(y > this.y && y < this.y + this.height){
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 class playerCharacter extends gameObject{
@@ -152,6 +165,9 @@ class playerCharacter extends gameObject{
 		
 			if (event.button == 2){
 				player.ShootFlak(x, y);
+			}
+			if (event.button == 1){
+				gameObjects.push(new enemy(100, 100, player.x, player.y, "red", 100, 10)); //debug enemy spawning
 			}
 			event.preventDefault();
 		});
@@ -230,6 +246,8 @@ class shrapnel extends gameObject{
 			gameObjects.splice(gameObjects.indexOf(this), 1);
 		}
 		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed)
+
+		if()
 	}
 }
 
@@ -246,5 +264,34 @@ class bullet extends gameObject{
 
 	Update(){
 		this.move(this.x + this.directionX*this.speed, this.y + this.directionY*this.speed);
+	}
+}
+
+class enemy extends gameObject{
+	constructor(width, height, x, y, color, hp, speed){
+		super(width, height, x, y, color);
+		this.hp = hp;
+		this.speed = speed;
+
+		var destX = x+(Math.random() - 0.5);
+		var destY = y+(Math.random() - 0.5);
+		this.AIDirection = getDirection(x, y, destX, destY);
+	}
+	Update(){
+		this.move(this.x+this.AIDirection[0], this.y+this.AIDirection[1]);
+		if(Math.floor(Math.random()*100) == 99) this.Shoot();
+
+		if(Math.floor(Math.random()*100) == 99){
+			var destX = this.x+(Math.random() - 0.5);
+			var destY = this.y+(Math.random() - 0.5);
+			this.AIDirection = getDirection(this.x, this.y, destX, destY);
+		}
+	}
+	Die(){
+		console.log("oof");
+		gameObjects.splice(gameObjects.indexOf(this), 1);
+	}
+	Shoot(){
+		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 20, player.centerX, player.centerY));
 	}
 }

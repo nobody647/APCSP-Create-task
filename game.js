@@ -11,60 +11,58 @@ var mousePressed;
 var mouseX;
 var mouseY;
 
-$(document).ready(function(){
+var score = 0;
+var ticks = 0;
+
+
+$(document).ready(function () {
 	console.log("Hello world!");
 
 	setup();
 
 	setInterval(function () {
 		update();
-	 }, 16)
+	}, 16)
 });
 
-function setup(){
+function setup() {
+	gameObjects = [];
 	canvas = document.getElementById("gameCanvas");
 	context = canvas.getContext("2d");
-	
-	player = new playerCharacter(20, 20, 0, 0, "blue", 100, 10, 10, true)
-	gameObjects.push(player);
 
-	document.addEventListener('keydown', function(event){
-		if (event.which == 38 || event.which == 87){ //up
-			console.log("Up");
+	player = new playerCharacter(30, 30, 0, 0, "blue", 100, 10, 10, true)
+	gameObjects.push(player);
+	
+
+	document.addEventListener('keydown', function (event) {
+		if (event.which == 38 || event.which == 87) { //up
 			upPressed = true;
-		}else if (event.which == 40 || event.which == 83){ //down
-			console.log("Down");
+		} else if (event.which == 40 || event.which == 83) { //down
 			downPressed = true;
-		}else if (event.which == 37 || event.which == 65){ //left
-			console.log("Left");
+		} else if (event.which == 37 || event.which == 65) { //left
 			leftPressed = true;
-		}else if (event.which == 39 || 68){ //right
-			console.log("Right")
+		} else if (event.which == 39 || 68) { //right
 			rightPressed = true;
 		}
 	});
-	document.addEventListener('keyup', function(event){
-		if (event.which == 38 || event.which == 87){ //up
-			console.log("Up");
+	document.addEventListener('keyup', function (event) {
+		if (event.which == 38 || event.which == 87) { //up
 			upPressed = false;
-		}else if (event.which == 40 || event.which == 83){ //down
-			console.log("Down");
+		} else if (event.which == 40 || event.which == 83) { //down
 			downPressed = false;
-		}else if (event.which == 37 || event.which == 65){ //left
-			console.log("Left");
+		} else if (event.which == 37 || event.which == 65) { //left
 			leftPressed = false;
-		}else if (event.which == 39 || event.which == 68){ //right
-			console.log("Right")
+		} else if (event.which == 39 || event.which == 68) { //right
 			rightPressed = false;
 		}
 	});
-	canvas.onmousedown = function(event) { 
+	canvas.onmousedown = function (event) {
 		if (event.button == 0) mousePressed = true;
 	};
-	document.onmouseup = function() {
+	document.onmouseup = function () {
 		mousePressed = false;
 	};
-	canvas.onmousemove = function(event){
+	canvas.onmousemove = function (event) {
 		var rect = canvas.getBoundingClientRect();
 		mouseX = event.clientX - rect.left;
 		mouseY = event.clientY - rect.top;
@@ -72,47 +70,119 @@ function setup(){
 	document.addEventListener('contextmenu', event => event.preventDefault());
 }
 
-function update(){
+function update() {
 	var obj;
 	context.clearRect(0, 0, canvas.width, canvas.height); //Clear canvas
-	context.fillStyle = "red";
 
-	for(var i = 0; i < gameObjects.length; i++){
-		context.fillStyle = "red";
+	for (var i = 0; i < gameObjects.length; i++) {
 		obj = gameObjects[i];
-		if (typeof obj.Update === 'function') obj.Update(); //calls the objects update function
+
 		context.fillStyle = obj.color;
 
-		if(obj instanceof playerCharacter){
-			
-			if (obj.ctrl){
-				if (upPressed) obj.move(obj.x, obj.y - obj.speed);
-				if (downPressed) obj.move(obj.x, obj.y + obj.speed);
-				if (leftPressed) obj.move(obj.x - obj.speed, obj.y);
-				if (rightPressed) obj.move(obj.x + obj.speed, obj.y);
-			}
+		if (typeof obj.Update === "function") obj.Update(); //calls the objects update function
 
+		if (typeof obj.hp === "number" && typeof obj.Die === "function") {
+			if (obj.hp <= 0) obj.Die();
 		}
 
 		context.fillRect(obj.x, obj.y, obj.width, obj.height);
 	}
+
+	if (Math.random() <= Math.sqrt(ticks / 10000)/200 + .005) spawnEnemy(Math.sqrt(ticks / 10000)/200 + .01);
+
+
+	if (Math.random() <= .001 && player.hp < 100){ //Health powerup
+		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "green", 1, function(obj){
+			obj.hp += 50;
+		}));
+	}
+
+	if (Math.random() <= .0005 && player.ammo < 30){ //Ammo powerup
+		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "gray", 1, function(obj){
+			obj.ammo += 50;
+		}));
+	}
+	
+	if (Math.random() <= .0001){ //Nuke powerup
+		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "orange", 1, function(obj){
+			console.log("Nuke");
+			gameObjects = [player, this];
+			context.fillStyle = "yellow";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+		}));
+	}
+
+	drawUI();
+	ticks ++;
 }
 
-function getDirection(startX, startY, endX, endY){  //i hate geometry. https://i.imgur.com/J83605g.png
+function drawUI() {
+	var uiY = canvas.height - 105;
+	context.fillStyle = "rgba(200, 200, 200, 0.5)";
+	context.font = "30px Roboto";
+
+	context.fillRect(0, uiY, 300, 105);
+
+	context.fillStyle = "black";
+	context.fillText("HP", 0, canvas.height - 75);
+	fillBar(player.hp / 100, "red", 100, canvas.height - 100, 100, 30)
+
+	context.fillText("AMMO", 0, canvas.height - 40);
+	fillBar(player.ammo / 30, "red", 100, canvas.height - 65, 100, 30)
+
+	context.fillText("SCORE", 0, canvas.height - 5)
+	context.fillStyle = "red"
+	context.fillText(score, 100, canvas.height - 5)
+
+
+}
+
+function fillBar(percent, color, x, y, width, height) {
+	if (percent > 1) percent = 1;
+	var oldStroke = context.strokeStyle;
+	var oldFill = context.fillStyle;
+
+	context.fillStyle = color;
+	context.strokeStyle = color;
+	context.strokeRect(x, y, width, height);
+	context.fillRect(x, y, width * percent, height);
+
+	context.strokeStyle = oldStroke;
+	context.fillStyle = oldFill;
+}
+
+function getDirection(startX, startY, endX, endY) { //i hate geometry. https://i.imgur.com/J83605g.png
 	var distX = endX - startX
 	var distY = endY - startY
 
 	var hypotonoose = Math.sqrt((distX ** 2) + (distY ** 2)); //yes, i know, i cant spell
 
-	return [distX/hypotonoose, distY/hypotonoose, distX, distY];
+	return [distX / hypotonoose, distY / hypotonoose, distX, distY];
 }
 
-function getInside(gameObject){
-	for(int i = 0, )
+function getCollisions(original) { //Returns an array of all objects that are colliding with the input
+	var output = [];
+
+	for (var i = 0; i < gameObjects.length; i++) {
+		let obj = gameObjects[i];
+		if (obj == original) continue;
+
+		if (original.IsInside(obj)) {
+			output.push(obj);
+		}
+	}
+
+	return output;
 }
 
-class gameObject{
-	constructor(width, height, x, y, color){
+function spawnEnemy(difficulty){
+	var shoot = Math.random() * .05 + difficulty * .1;
+	var scoot = Math.random() * .01 + .002 +  difficulty * .05;
+	gameObjects.push(new enemy(20, 20, Math.random()*canvas.width, Math.random() * canvas.height, "red", 40, 10, shoot, scoot));
+}
+
+class gameObject {
+	constructor(width, height, x, y, color) {
 		this.width = width;
 		this.height = height;
 		this.x = x;
@@ -120,36 +190,37 @@ class gameObject{
 		this.color = color;
 	}
 
-	get centerX(){
-		return this.x + this.width/2;
+	get centerX() {
+		return this.x + this.width / 2;
 	}
-	get centerY(){
-		return this.y + this.height/2;
+	get centerY() {
+		return this.y + this.height / 2;
 	}
 
-	move(destX, destY){
+	move(destX, destY) {
 		if (destX < 0) destX = 0;
 		if (destY < 0) destY = 0;
 
-		if (destX + this.width > 640) destX = 640 - this.width;
-		if (destY + this.height > 480) destY = 480 - this.height;
-		
+		if (destX + this.width > canvas.width) destX = canvas.width - this.width;
+		if (destY + this.height > canvas.height) destY = canvas.height - this.height;
+
 		this.x = destX;
 		this.y = destY;
 	}
 
-	IsInside(x, y){
-		if(x > this.x && x < this.x + this.width){
-			if(y > this.y && y < this.y + this.height){
-				return true;
-			}
+	IsInside(obj) {
+		if (obj.x < this.x + this.width &&
+			obj.x + obj.width > this.x &&
+			obj.y < this.y + this.height &&
+			obj.height + obj.y > this.y) {
+			return true;
 		}
 		return false;
 	}
 }
 
-class playerCharacter extends gameObject{
-	constructor(width, height, x, y, color, hp, speed, ammo, ctrl){
+class playerCharacter extends gameObject {
+	constructor(width, height, x, y, color, hp, speed, ammo, ctrl) {
 		super(width, height, x, y, color);
 		this.hp = hp;
 		this.speed = speed;
@@ -158,45 +229,79 @@ class playerCharacter extends gameObject{
 
 		this.reload = 0;
 
-		canvas.addEventListener("mousedown", function(event){
+		canvas.addEventListener("mousedown", function (event) {
 			var rect = canvas.getBoundingClientRect();
 			var x = event.clientX - rect.left;
 			var y = event.clientY - rect.top;
-		
-			if (event.button == 2){
+
+			if (event.button == 2) {
 				player.ShootFlak(x, y);
 			}
-			if (event.button == 1){
-				gameObjects.push(new enemy(100, 100, player.x, player.y, "red", 100, 10)); //debug enemy spawning
+			if (event.button == 1) {
+				gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() *.05, Math.random() * .01 + .01)); //debug enemy spawning
 			}
 			event.preventDefault();
+
+
 		});
 
 	}
 
-	ShootFlak(destX, destY){
-		gameObjects.push(new flak(5, 5, this.centerX-2.5, this.centerY-2.5, this.color, 10, 30, destX, destY));
-		console.log("Bang!");
+	ShootFlak(destX, destY) {
+		if (this.ammo >= 1) {
+			this.ammo--;
+			gameObjects.push(new flak(5, 5, this.centerX - 2.5, this.centerY - 2.5, this.color, 15, 40, destX, destY));
+			console.log("Bang!");
+		}
 	}
-	ShootBullet(destX, destY){
-		if (this.reload <= 0){
-			gameObjects.push(new bullet(this.centerX-2.5, this.centerY-2.5, this.color, 20, 5, destX, destY));
+	ShootBullet(destX, destY) {
+		if (this.reload <= 0) {
+			gameObjects.push(new bullet(this.centerX - 2.5, this.centerY - 2.5, this.color, 20, 10, destX, destY));
 			console.log("Pow!");
 			this.reload = 7;
-		}else{
-			this.reload --;
+		} else {
+			this.reload--;
 		}
 	}
 
-	Update(){
-		if (mousePressed){
-			this.ShootBullet(mouseX, mouseY);
+	Update() {
+		if (this.ctrl) {
+			if (upPressed) this.move(this.x, this.y - this.speed);
+			if (downPressed) this.move(this.x, this.y + this.speed);
+			if (leftPressed) this.move(this.x - this.speed, this.y);
+			if (rightPressed) this.move(this.x + this.speed, this.y);
+
+			if (mousePressed) this.ShootBullet(mouseX, mouseY);
 		}
+
+		if (this.ammo <= 30) this.ammo += 0.01;
+		if (this.hp <= 100) this.hp += 0.1;
+
+		var collision = getCollisions(this)[0];
+		if (collision && "equip" in collision){
+			collision.equip(this);
+			gameObjects.splice(gameObjects.indexOf(collision), 1);
+		}
+	}
+
+	Die() {
+		context.fillStyle = "black";
+		context.font = "50px Roboto";
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.textAlign="center"; 
+		context.fillText("Game Over", canvas.width/2, canvas.height/2);
+
+		setTimeout(function(){
+			this.hp = 1000000;
+			alert("Your score was "+ score +". CLick OK to try again");
+			location.reload();
+		}, 2000)
+
 	}
 }
 
-class flak extends gameObject{
-	constructor(width, height, x, y, color, speed, damage, destX, destY){
+class flak extends gameObject {
+	constructor(width, height, x, y, color, speed, damage, destX, destY) {
 		super(width, height, x, y, color);
 		this.speed = speed;
 		this.damage = damage;
@@ -204,94 +309,133 @@ class flak extends gameObject{
 		this.destY = destY;
 	}
 
-	Update(){
+	Update() {
 		var direction = getDirection(this.x, this.y, this.destX, this.destY);
 
-		this.move(this.x + direction[0]*this.speed, this.y + direction[1]*this.speed);
+		this.move(this.x + direction[0] * this.speed, this.y + direction[1] * this.speed);
 
-		if(Math.abs(direction[2]) < this.speed && Math.abs(direction[3] < this.speed)){
-			console.log("Boom!");
-
-			for(var i = 0; i < this.damage; i++){
-				gameObjects.push(new shrapnel(this.x, this.y, this.color, 60, 5));
-			}
-
-			var index = gameObjects.indexOf(this);
-			if (index == -1){
-				console.log("what the fuck");
-				return;
-			}
-			gameObjects.splice(index, 1);
+		if (Math.abs(direction[2]) < this.speed && Math.abs(direction[3]) < this.speed) {
+			this.Explode();
 		}
+	}
+
+	Explode() {
+		console.log("Boom!");
+
+		for (var i = 0; i < this.damage; i++) {
+			gameObjects.push(new shrapnel(this.x, this.y, this.color, 20, 10));
+		}
+
+		gameObjects.splice(gameObjects.indexOf(this), 1);
 	}
 }
 
-class shrapnel extends gameObject{
-	constructor(x, y, color, time, damage){
+class shrapnel extends gameObject {
+	constructor(x, y, color, time, damage) {
 		super(2, 2, x, y, color);
 		this.time = time;
 		this.damage = damage;
 
-		this.speed = -0.5 *Math.random() + 1
+		this.speed = -1 * Math.random() + 4
 
-		var destX = x+(Math.random() - 0.5);
-		var destY = y+(Math.random() - 0.5);
+		var destX = x + (Math.random() - 0.5);
+		var destY = y + (Math.random() - 0.5);
 		this.directionX = getDirection(x, y, destX, destY)[0];
 		this.directionY = getDirection(x, y, destX, destY)[1];
 	}
 
-	Update(){
-		this.time --;
-		if (this.time <= 0){
+	Update() {
+		this.time--;
+		if (this.time <= 0) {
 			gameObjects.splice(gameObjects.indexOf(this), 1);
 		}
 		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed)
 
-		if()
+		var collision = getCollisions(this)[0]; //Damage
+		if (collision && "hp" in collision && collision.color != this.color) {
+			collision.hp -= this.damage;
+			gameObjects.splice(gameObjects.indexOf(this), 1);
+			console.log("Direct hit!");
+		}
 	}
 }
 
 
-class bullet extends gameObject{
-	constructor(x, y, color, speed, damage, destX, destY){
+class bullet extends gameObject {
+	constructor(x, y, color, speed, damage, destX, destY) {
 		super(3, 3, x, y, color);
 		this.speed = speed;
 		this.damage = damage;
+
+		this.time = 300;
 
 		this.directionX = getDirection(x, y, destX, destY)[0];
 		this.directionY = getDirection(x, y, destX, destY)[1];
 	}
 
-	Update(){
-		this.move(this.x + this.directionX*this.speed, this.y + this.directionY*this.speed);
+	Update() {
+		this.time --;
+
+		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed);
+
+		var collision = getCollisions(this)[0]; //Damage
+		if (collision && "hp" in collision && collision.color != this.color) {
+			collision.hp -= this.damage;
+			gameObjects.splice(gameObjects.indexOf(this), 1);
+			console.log("Direct hit!");
+		}
+
+		if (this.time <= 0 || this.lastX == this.x || this.lastY == this.y){ //Despawns bullet if timeout or reached edge
+			gameObjects.splice(gameObjects.indexOf(this), 1);
+		}
+
+		this.lastX = this.x;
+		this.lastY = this.y;
 	}
 }
 
-class enemy extends gameObject{
-	constructor(width, height, x, y, color, hp, speed){
+class enemy extends gameObject {
+	constructor(width, height, x, y, color, hp, speed, shoot, scoot) {
 		super(width, height, x, y, color);
 		this.hp = hp;
 		this.speed = speed;
+		this.shoot = shoot;
+		this.scoot = scoot;
 
-		var destX = x+(Math.random() - 0.5);
-		var destY = y+(Math.random() - 0.5);
+		var destX = x + (Math.random() - 0.5);
+		var destY = y + (Math.random() - 0.5);
 		this.AIDirection = getDirection(x, y, destX, destY);
 	}
-	Update(){
-		this.move(this.x+this.AIDirection[0], this.y+this.AIDirection[1]);
-		if(Math.floor(Math.random()*100) == 99) this.Shoot();
+	Update() {
+		this.move(this.x + this.AIDirection[0], this.y + this.AIDirection[1]);
+		
+		if (Math.random() < this.shoot) this.Shoot();
 
-		if(Math.floor(Math.random()*100) == 99){
-			var destX = this.x+(Math.random() - 0.5);
-			var destY = this.y+(Math.random() - 0.5);
+		if (Math.random() < this.scoot || this.lastX == this.x || this.lastY == this.y) {
+			var destX = this.x + (Math.random() - 0.5);
+			var destY = this.y + (Math.random() - 0.5);
 			this.AIDirection = getDirection(this.x, this.y, destX, destY);
 		}
+
+		this.lastX = this.x;
+		this.lastY = this.y;
 	}
-	Die(){
+	Die() {
 		console.log("oof");
 		gameObjects.splice(gameObjects.indexOf(this), 1);
+		score += Math.floor((this.scoot + this.shoot)*1000);
 	}
-	Shoot(){
-		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 20, player.centerX, player.centerY));
+	Shoot() {
+		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 10, player.centerX, player.centerY));
 	}
+}
+
+class powerUp extends gameObject{
+	constructor(x, y, color, strength, equip){
+		super(10, 10, x, y, color);
+		this.strength = strength;
+
+		this.equip = equip;
+	}
+
 }

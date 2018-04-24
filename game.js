@@ -139,6 +139,7 @@ function drawUI() {
 
 function fillBar(percent, color, x, y, width, height) {
 	if (percent > 1) percent = 1;
+	if (percent < 0) percent = 0;
 	var oldStroke = context.strokeStyle;
 	var oldFill = context.fillStyle;
 
@@ -290,9 +291,9 @@ class playerCharacter extends gameObject {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.textAlign="center"; 
 		context.fillText("Game Over", canvas.width/2, canvas.height/2);
+		this.hp = 1000000;
 
 		setTimeout(function(){
-			this.hp = 1000000;
 			alert("Your score was "+ score +". CLick OK to try again");
 			location.reload();
 		}, 2000)

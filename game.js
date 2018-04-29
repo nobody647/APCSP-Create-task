@@ -14,25 +14,19 @@ var mouseY;
 var score = 0;
 var ticks = 0;
 
-
-$(document).ready(function () {
+function setup() {
 	console.log("Hello world!");
-
-	setup();
 
 	setInterval(function () {
 		update();
 	}, 16)
-});
 
-function setup() {
 	gameObjects = [];
 	canvas = document.getElementById("gameCanvas");
 	context = canvas.getContext("2d");
 
 	player = new playerCharacter(30, 30, 0, 0, "blue", 100, 10, 10, true)
 	gameObjects.push(player);
-	
 
 	document.addEventListener('keydown', function (event) {
 		if (event.which == 38 || event.which == 87) { //up
@@ -74,21 +68,20 @@ function update() {
 	var obj;
 	context.clearRect(0, 0, canvas.width, canvas.height); //Clear canvas
 
-	for (var i = 0; i < gameObjects.length; i++) {
+	for (var i = 0; i < gameObjects.length; i++) { //loops thru all gameObjects
 		obj = gameObjects[i];
 
-		context.fillStyle = obj.color;
+		if (typeof obj.Update === "function") obj.Update(); //calls the object's update method if it exists
 
-		if (typeof obj.Update === "function") obj.Update(); //calls the objects update function
-
-		if (typeof obj.hp === "number" && typeof obj.Die === "function") {
+		if (typeof obj.hp === "number" && typeof obj.Die === "function") { //kills gameObjects that are killable and have an hp of 0
 			if (obj.hp <= 0) obj.Die();
 		}
 
-		context.fillRect(obj.x, obj.y, obj.width, obj.height);
+		context.fillStyle = obj.color;
+		context.fillRect(obj.x, obj.y, obj.width, obj.height); //draws the object
 	}
 
-	if (Math.random() <= Math.sqrt(ticks / 10000)/200 + .005) spawnEnemy(Math.sqrt(ticks / 10000)/200 + .01);
+	if (Math.random() <= Math.sqrt(ticks / 10000)/200 + .005) spawnEnemy(Math.sqrt(ticks / 10000)/200 + .01); //Spawns enemies based on the difficulty
 
 
 	if (Math.random() <= .001 && player.hp < 100){ //Health powerup
@@ -99,7 +92,7 @@ function update() {
 
 	if (Math.random() <= .0005 && player.ammo < 30){ //Ammo powerup
 		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "gray", 1, function(obj){
-			obj.ammo += 50;
+			obj.ammo += 10;
 		}));
 	}
 	
@@ -117,39 +110,45 @@ function update() {
 }
 
 function drawUI() {
-	var uiY = canvas.height - 105;
-	context.fillStyle = "rgba(200, 200, 200, 0.5)";
-	context.font = "30px Roboto";
+	var uiY = canvas.height - 105; //Height of UI box
+	context.font = "30px Arial";
 
-	context.fillRect(0, uiY, 300, 105);
+	context.fillStyle = "rgba(200, 200, 200, 0.5)";
+	context.fillRect(0, uiY, 300, 105); //Draws box around UI elements
 
 	context.fillStyle = "black";
+
 	context.fillText("HP", 0, canvas.height - 75);
-	fillBar(player.hp / 100, "red", 100, canvas.height - 100, 100, 30)
+	fillBar(player.hp / 100, "red", 120, canvas.height - 100, 100, 30); //Draws HP indicator and bar
 
 	context.fillText("AMMO", 0, canvas.height - 40);
-	fillBar(player.ammo / 30, "red", 100, canvas.height - 65, 100, 30)
+	fillBar(player.ammo / 30, "red", 120, canvas.height - 65, 100, 30); //Draws ammo indicator and bar
 
-	context.fillText("SCORE", 0, canvas.height - 5)
-	context.fillStyle = "red"
-	context.fillText(score, 100, canvas.height - 5)
-
+	context.fillText("SCORE", 0, canvas.height - 5);
+	context.fillStyle = "red";
+	context.fillText(score, 120, canvas.height - 5); //draws score indicator
 
 }
 
 function fillBar(percent, color, x, y, width, height) {
-	if (percent > 1) percent = 1;
-	if (percent < 0) percent = 0;
+	percent = constrain(percent, 0, 1); //Constrains the percentage between 0 and 1
+
 	var oldStroke = context.strokeStyle;
-	var oldFill = context.fillStyle;
+	var oldFill = context.fillStyle; //Stores the current colors
 
 	context.fillStyle = color;
 	context.strokeStyle = color;
-	context.strokeRect(x, y, width, height);
-	context.fillRect(x, y, width * percent, height);
+	context.strokeRect(x, y, width, height); //Draws box around bar
+	context.fillRect(x, y, width * percent, height); //Fills bar
 
 	context.strokeStyle = oldStroke;
-	context.fillStyle = oldFill;
+	context.fillStyle = oldFill; //Resets colors to old values
+}
+
+function constrain(input, min, max){ //constrains a number between a min and a max
+	if (input < min) input = min;
+	if (input > max) input = max;
+	return input;
 }
 
 function getDirection(startX, startY, endX, endY) { //i hate geometry. https://i.imgur.com/J83605g.png
@@ -164,12 +163,13 @@ function getDirection(startX, startY, endX, endY) { //i hate geometry. https://i
 function getCollisions(original) { //Returns an array of all objects that are colliding with the input
 	var output = [];
 
-	for (var i = 0; i < gameObjects.length; i++) {
-		let obj = gameObjects[i];
+	for (var i = 0; i < gameObjects.length; i++) { //Loops tru all gameObjects
+		var obj = gameObjects[i];
+
 		if (obj == original) continue;
 
 		if (original.IsInside(obj)) {
-			output.push(obj);
+			output.push(obj); //Adds colliding object to output array
 		}
 	}
 
@@ -239,13 +239,10 @@ class playerCharacter extends gameObject {
 				player.ShootFlak(x, y);
 			}
 			if (event.button == 1) {
-				gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() *.05, Math.random() * .01 + .01)); //debug enemy spawning
+				//gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() *.05, Math.random() * .01 + .01)); //debug enemy spawning
 			}
 			event.preventDefault();
-
-
 		});
-
 	}
 
 	ShootFlak(destX, destY) {
@@ -273,6 +270,7 @@ class playerCharacter extends gameObject {
 			if (rightPressed) this.move(this.x + this.speed, this.y);
 
 			if (mousePressed) this.ShootBullet(mouseX, mouseY);
+
 		}
 
 		if (this.ammo <= 30) this.ammo += 0.01;
@@ -287,7 +285,7 @@ class playerCharacter extends gameObject {
 
 	Die() {
 		context.fillStyle = "black";
-		context.font = "50px Roboto";
+		context.font = "50px Arial";
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.textAlign="center"; 
 		context.fillText("Game Over", canvas.width/2, canvas.height/2);
@@ -296,8 +294,7 @@ class playerCharacter extends gameObject {
 		setTimeout(function(){
 			alert("Your score was "+ score +". CLick OK to try again");
 			location.reload();
-		}, 2000)
-
+		}, 50)
 	}
 }
 
@@ -438,5 +435,7 @@ class powerUp extends gameObject{
 
 		this.equip = equip;
 	}
-
 }
+
+
+setup();

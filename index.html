@@ -1,25 +1,39 @@
 <html>
-	<head>
-		<script src= "https://code.jquery.com/jquery-3.3.1.min.js"></script>
-		<script src = "game.js"></script>
-		<link rel = "stylesheet" href = "site.css"></style>
-	</head>
-	<body>
-		<header>
-			<h1 class = "title">
-				<pre>
+
+<head>
+	<link rel="stylesheet" href="site.css">
+	</style>
+</head>
+
+<body>
+	<header>
+		<h1 class="title">
+			<pre>
 _____ ____  __  _____    ____  ______   _____ __  ______  ____  ________________ 
 / ___// __ \/ / / /   |  / __ \/ ____/  / ___// / / / __ \/ __ \/_  __/ ____/ __ \
 \__ \/ / / / / / / /| | / /_/ / __/     \__ \/ /_/ / / / / / / / / / / __/ / /_/ /
 ___/ / /_/ / /_/ / ___ |/ _, _/ /___    ___/ / __  / /_/ / /_/ / / / / /___/ _, _/ 
 /____/\___\_\____/_/  |_/_/ |_/_____/   /____/_/ /_/\____/\____/ /_/ /_____/_/ |_|  
-
 				</pre>
-		 </h1>
-		 <h2 class = "title">
-			 AP CSP Create Task
-		 </h2>
-		</header>
-		<canvas id = "gameCanvas" width = "1280" height = "700"></canvas>
-	</body>
+		</h1>
+		<h2 class="title">
+			AP CSP Create Task
+		</h2>
+	</header>
+	<canvas id="gameCanvas" width="1280" height="600"></canvas>
+
+	<div class="title">
+		<h3>Controls</h3>
+		<ul style="list-style-type: none">
+			<li>Arrow keys / WASD: Movement</li>
+			<li>Left click: Minigun</li>
+			<li>Right click: Cannon</li>
+			&nbsp;
+			<li>Survive for as long as you can!</li>
+		</ul>
+	</div>
+</body>
+
+<script src="game.js"></script>
+
 </html>

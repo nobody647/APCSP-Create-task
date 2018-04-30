@@ -273,8 +273,8 @@ class playerCharacter extends gameObject {
 
 		}
 
-		if (this.ammo <= 30) this.ammo += 0.01;
-		if (this.hp <= 100) this.hp += 0.1;
+		if (this.ammo <= 30) this.ammo += 0.002;
+		if (this.hp <= 100) this.hp += 0.04;
 
 		var collision = getCollisions(this)[0];
 		if (collision && "equip" in collision){

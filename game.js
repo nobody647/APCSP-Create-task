@@ -20,7 +20,7 @@ var enhealth = 40;
 var PlayerHealth = 100;
 var coincount = 0;
 var blast = 20;
-var fire = 10;
+var fire = 10;      
 var regen = .1;
 
 $(document).ready(function () {
@@ -120,7 +120,7 @@ function update() {
 		}));
 	}
 
-	if (Math.random() <= .05) { //Coin
+	if (Math.random() <= .0007) { //Coin
 		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "blue", 1, function (obj) {
 			coincount++;
 			document.getElementById("coins").innerHTML = "Coins: " + coincount;
@@ -317,42 +317,6 @@ class playerCharacter extends gameObject {
 	}
 }
 
-
-class enemy extends gameObject {
-	constructor(width, height, x, y, color, hp, speed, shoot, scoot) {
-		super(width, height, x, y, color);
-		this.hp = hp;
-		this.speed = speed;
-		this.shoot = shoot;
-		this.scoot = scoot;
-
-		var destX = x + (Math.random() - 0.5);
-		var destY = y + (Math.random() - 0.5);
-		this.AIDirection = getDirection(x, y, destX, destY);
-	}
-	Update() {
-		this.move(this.x + this.AIDirection[0], this.y + this.AIDirection[1]);
-
-		if (Math.random() < this.shoot) this.Shoot();
-
-		if (Math.random() < this.scoot || this.lastX == this.x || this.lastY == this.y) {
-			var destX = this.x + (Math.random() - 0.5);
-			var destY = this.y + (Math.random() - 0.5);
-			this.AIDirection = getDirection(this.x, this.y, destX, destY);
-		}
-
-		this.lastX = this.x;
-		this.lastY = this.y;
-	}
-	Die() {
-		console.log("oof");
-		gameObjects.splice(gameObjects.indexOf(this), 1);
-		score += Math.floor((this.scoot + this.shoot) * 1000);
-	}
-	Shoot() {
-		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 10, player.centerX, player.centerY));
-	}
-}
 
 class powerUp extends gameObject {
 	constructor(x, y, color, strength, equip) {

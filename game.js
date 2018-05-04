@@ -158,6 +158,11 @@ function getCollisions(original) { //Returns an array of all objects that are co
 	return output;
 }
 
+function randomPlusOrMinus(input){
+	if (Math.random() >= .5) input = -input;
+	return input;
+}
+
 function spawnEnemy(difficulty){
 	var shoot = Math.random() * .05 + difficulty * .1;
 	var scoot = Math.random() * .01 + .002 +  difficulty * .05;
@@ -211,6 +216,7 @@ class playerCharacter extends gameObject {
 		this.ctrl = ctrl;
 
 		this.reload = 0;
+		this.weapons = [new weapon(1, 10, 20, 0.05, bullet), new weapon(1, 20, 15, .05, flak)];
 
 		canvas.addEventListener("mousedown", function (event) {
 			var rect = canvas.getBoundingClientRect();
@@ -218,7 +224,8 @@ class playerCharacter extends gameObject {
 			var y = event.clientY - rect.top;
 
 			if (event.button == 2) {
-				player.ShootFlak(x, y);
+				//player.ShootFlak(x, y);
+				this.weapons[1].Fire();
 			}
 			if (event.button == 1) {
 				//gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() *.05, Math.random() * .01 + .01)); //debug enemy spawning
@@ -245,9 +252,8 @@ class playerCharacter extends gameObject {
 	}
 	ShootShotgun(destX, destY, count) {
 		if (this.reload <= 0){
-			for(var i = 0; i < count; i++){
-				gameObjects.push(new bullet(this.centerX-2.5, this.centerY-2.5, this.color, 20, 10, destX+Math.random(), destY+Math.random()));
-			}
+			//var wep = new weapon(10, 10, 10, .2, bullet, null, null);
+			//wep.Fire(destX, destY);
 		}
 	}
 
@@ -258,7 +264,7 @@ class playerCharacter extends gameObject {
 			if (leftPressed) this.move(this.x - this.speed, this.y);
 			if (rightPressed) this.move(this.x + this.speed, this.y);
 
-			if (mousePressed) this.ShootShotgun(mouseX, mouseY, 20);
+			if (mousePressed) this.weapons[0].Fire(mouseX, mouseY);
 
 		}
 
@@ -288,8 +294,3 @@ class playerCharacter extends gameObject {
 }
 
 
-
-
-
-
-setup();

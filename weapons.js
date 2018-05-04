@@ -1,27 +1,27 @@
-class weapon{
-	constructor(shots, damage, speed, spread, bulletType, fire, hit){
+class weapon {
+	constructor(shots, damage, speed, spread, bulletType, fire, hit) {
 		this.shots = shots;
 		this.damage = damage;
 		this.speed = speed;
 		this.spread = spread;
 		this.bulletType = bulletType;
-
+		
 		if (fire) this.Fire = fire;
 		if (hit) this.Hit = hit;
 	}
 
-	Fire(destX, destY){
-		for (var i = 0; i < shots; i++){
-			direction = getDirection(player.centerX, player.centerY, destX, destY);
-			direction[0] += Math.random() * this.spread;
-			direction[1] += Math.random() * this.spread;
+	Fire(destX, destY) {
+		for (var i = 0; i < this.shots; i++) {
+			var direction = getDirection(player.centerX-2.5, player.centerY-2.5, destX, destY);
+
+			direction[0] += randomPlusOrMinus(Math.random()) * this.spread;
+			direction[1] += randomPlusOrMinus(Math.random()) * this.spread;
 			var bullet = new this.bulletType(player.centerX, player.centerY, player.color, this.speed, this.damage, direction[0], direction[1])
 			gameObjects.push(bullet);
 		}
 	}
 
-	Hit(){
-		
+	Hit() {
 	}
 }
 
@@ -85,7 +85,6 @@ class shrapnel extends gameObject {
 	}
 }
 
-
 class bullet extends gameObject {
 	constructor(x, y, color, speed, damage, destX, destY) {
 		super(3, 3, x, y, color);
@@ -94,12 +93,15 @@ class bullet extends gameObject {
 
 		this.time = 300;
 
-		this.directionX = getDirection(x, y, destX, destY)[0];
-		this.directionY = getDirection(x, y, destX, destY)[1];
+		//this.directionX = getDirection(x, y, destX, destY)[0];
+		//this.directionY = getDirection(x, y, destX, destY)[1];
+
+		this.directionX = destX;
+		this.directionY = destY;
 	}
 
 	Update() {
-		this.time --;
+		this.time--;
 
 		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed);
 
@@ -110,7 +112,7 @@ class bullet extends gameObject {
 			console.log("Direct hit!");
 		}
 
-		if (this.time <= 0 || this.lastX == this.x || this.lastY == this.y){ //Despawns bullet if timeout or reached edge
+		if (this.time <= 0 || this.lastX == this.x || this.lastY == this.y) { //Despawns bullet if timeout or reached edge
 			gameObjects.splice(gameObjects.indexOf(this), 1);
 		}
 

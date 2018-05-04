@@ -12,7 +12,7 @@ var mousePressed;
 var mouseX;
 var mouseY;
 
-var score = 0;
+var score = 100;
 var ticks = 0;
 
 function setup() {

@@ -1,6 +1,7 @@
 var canvas;
 var context;
 var gameObjects = [];
+var spawners = [];
 var player;
 
 var upPressed;
@@ -71,7 +72,7 @@ function update() {
 	for (var i = 0; i < gameObjects.length; i++) { //loops thru all gameObjects
 		obj = gameObjects[i];
 
-		if (typeof obj.Update === "function") obj.Update(); //calls the object's update method if it exists
+		if (typeof obj.Update === "function") obj.Update(); //calls the object's update method (if it exists)
 
 		if (typeof obj.hp === "number" && typeof obj.Die === "function") { //kills gameObjects that are killable and have an hp of 0
 			if (obj.hp <= 0) obj.Die();
@@ -81,28 +82,9 @@ function update() {
 		context.fillRect(obj.x, obj.y, obj.width, obj.height); //draws the object
 	}
 
-	if (Math.random() <= Math.sqrt(ticks / 10000)/200 + .005) spawnEnemy(Math.sqrt(ticks / 10000)/200 + .01); //Spawns enemies based on the difficulty
-
-
-	if (Math.random() <= .001 && player.hp < 100){ //Health powerup
-		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "green", 1, function(obj){
-			obj.hp += 50;
-		}));
-	}
-
-	if (Math.random() <= .0005 && player.ammo < 30){ //Ammo powerup
-		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "gray", 1, function(obj){
-			obj.ammo += 10;
-		}));
-	}
-	
-	if (Math.random() <= .0001){ //Nuke powerup
-		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "orange", 1, function(obj){
-			console.log("Nuke");
-			gameObjects = [player, this];
-			context.fillStyle = "yellow";
-			context.fillRect(0, 0, canvas.width, canvas.height);
-		}));
+	var seed = Math.random();
+	for (var i = 0; i < spawners.length; i++){ //Does spawning of all enemies, powerups, etc.
+		spawners[i](seed);
 	}
 
 	drawUI();
@@ -261,6 +243,13 @@ class playerCharacter extends gameObject {
 			this.reload--;
 		}
 	}
+	ShootShotgun(destX, destY, count) {
+		if (this.reload <= 0){
+			for(var i = 0; i < count; i++){
+				gameObjects.push(new bullet(this.centerX-2.5, this.centerY-2.5, this.color, 20, 10, destX+Math.random(), destY+Math.random()));
+			}
+		}
+	}
 
 	Update() {
 		if (this.ctrl) {
@@ -269,7 +258,7 @@ class playerCharacter extends gameObject {
 			if (leftPressed) this.move(this.x - this.speed, this.y);
 			if (rightPressed) this.move(this.x + this.speed, this.y);
 
-			if (mousePressed) this.ShootBullet(mouseX, mouseY);
+			if (mousePressed) this.ShootShotgun(mouseX, mouseY, 20);
 
 		}
 
@@ -298,144 +287,9 @@ class playerCharacter extends gameObject {
 	}
 }
 
-class flak extends gameObject {
-	constructor(width, height, x, y, color, speed, damage, destX, destY) {
-		super(width, height, x, y, color);
-		this.speed = speed;
-		this.damage = damage;
-		this.destX = destX;
-		this.destY = destY;
-	}
-
-	Update() {
-		var direction = getDirection(this.x, this.y, this.destX, this.destY);
-
-		this.move(this.x + direction[0] * this.speed, this.y + direction[1] * this.speed);
-
-		if (Math.abs(direction[2]) < this.speed && Math.abs(direction[3]) < this.speed) {
-			this.Explode();
-		}
-	}
-
-	Explode() {
-		console.log("Boom!");
-
-		for (var i = 0; i < this.damage; i++) {
-			gameObjects.push(new shrapnel(this.x, this.y, this.color, 20, 10));
-		}
-
-		gameObjects.splice(gameObjects.indexOf(this), 1);
-	}
-}
-
-class shrapnel extends gameObject {
-	constructor(x, y, color, time, damage) {
-		super(2, 2, x, y, color);
-		this.time = time;
-		this.damage = damage;
-
-		this.speed = -1 * Math.random() + 4
-
-		var destX = x + (Math.random() - 0.5);
-		var destY = y + (Math.random() - 0.5);
-		this.directionX = getDirection(x, y, destX, destY)[0];
-		this.directionY = getDirection(x, y, destX, destY)[1];
-	}
-
-	Update() {
-		this.time--;
-		if (this.time <= 0) {
-			gameObjects.splice(gameObjects.indexOf(this), 1);
-		}
-		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed)
-
-		var collision = getCollisions(this)[0]; //Damage
-		if (collision && "hp" in collision && collision.color != this.color) {
-			collision.hp -= this.damage;
-			gameObjects.splice(gameObjects.indexOf(this), 1);
-			console.log("Direct hit!");
-		}
-	}
-}
 
 
-class bullet extends gameObject {
-	constructor(x, y, color, speed, damage, destX, destY) {
-		super(3, 3, x, y, color);
-		this.speed = speed;
-		this.damage = damage;
 
-		this.time = 300;
-
-		this.directionX = getDirection(x, y, destX, destY)[0];
-		this.directionY = getDirection(x, y, destX, destY)[1];
-	}
-
-	Update() {
-		this.time --;
-
-		this.move(this.x + this.directionX * this.speed, this.y + this.directionY * this.speed);
-
-		var collision = getCollisions(this)[0]; //Damage
-		if (collision && "hp" in collision && collision.color != this.color) {
-			collision.hp -= this.damage;
-			gameObjects.splice(gameObjects.indexOf(this), 1);
-			console.log("Direct hit!");
-		}
-
-		if (this.time <= 0 || this.lastX == this.x || this.lastY == this.y){ //Despawns bullet if timeout or reached edge
-			gameObjects.splice(gameObjects.indexOf(this), 1);
-		}
-
-		this.lastX = this.x;
-		this.lastY = this.y;
-	}
-}
-
-class enemy extends gameObject {
-	constructor(width, height, x, y, color, hp, speed, shoot, scoot) {
-		super(width, height, x, y, color);
-		this.hp = hp;
-		this.speed = speed;
-		this.shoot = shoot;
-		this.scoot = scoot;
-
-		var destX = x + (Math.random() - 0.5);
-		var destY = y + (Math.random() - 0.5);
-		this.AIDirection = getDirection(x, y, destX, destY);
-	}
-	Update() {
-		this.move(this.x + this.AIDirection[0], this.y + this.AIDirection[1]);
-		
-		if (Math.random() < this.shoot) this.Shoot();
-
-		if (Math.random() < this.scoot || this.lastX == this.x || this.lastY == this.y) {
-			var destX = this.x + (Math.random() - 0.5);
-			var destY = this.y + (Math.random() - 0.5);
-			this.AIDirection = getDirection(this.x, this.y, destX, destY);
-		}
-
-		this.lastX = this.x;
-		this.lastY = this.y;
-	}
-	Die() {
-		console.log("oof");
-		gameObjects.splice(gameObjects.indexOf(this), 1);
-		score += Math.floor((this.scoot + this.shoot)*1000);
-	}
-	Shoot() {
-		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 10, player.centerX, player.centerY));
-	}
-}
-
-class powerUp extends gameObject{
-	constructor(x, y, color, strength, equip){
-		super(10, 10, x, y, color);
-		this.strength = strength;
-
-		this.equip = equip;
-	}
-}
 
 
 setup();

@@ -33,3 +33,9 @@ spawners.push(function (seed) {
 		}));
 	}
 });
+if (Math.random() <= .0007) { //Coin
+	gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "blue", 1, function (obj) {
+		coincount++;
+		document.getElementById("coins").innerHTML = "Coins: " + coincount;
+	}));
+}

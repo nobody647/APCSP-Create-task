@@ -20,7 +20,7 @@ var enhealth = 40;
 var PlayerHealth = 100;
 var coincount = 0;
 var blast = 20;
-var fire = 10;      
+var fire = 10;  
 var regen = .1;
 
 $(document).ready(function () {
@@ -120,12 +120,7 @@ function update() {
 		}));
 	}
 
-	if (Math.random() <= .0007) { //Coin
-		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "blue", 1, function (obj) {
-			coincount++;
-			document.getElementById("coins").innerHTML = "Coins: " + coincount;
-		}));
-	}
+	
 
 
 	drawUI();

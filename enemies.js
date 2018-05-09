@@ -6,6 +6,8 @@ class enemy extends gameObject {
 		this.shoot = shoot;
 		this.scoot = scoot;
 
+		this.weapon = new weapon(1, 5, 5, .2, 0, 0, false, this.color, bullet);
+
 		var destX = x + (Math.random() - 0.5);
 		var destY = y + (Math.random() - 0.5);
 		this.AIDirection = getDirection(x, y, destX, destY);
@@ -13,7 +15,7 @@ class enemy extends gameObject {
 	Update() {
 		this.move(this.x + this.AIDirection[0], this.y + this.AIDirection[1]);
 		
-		if (Math.random() < this.shoot) this.Shoot();
+		if (Math.random() < this.shoot) this.weapon.Fire(this.centerX, this.centerY, player.centerX, player.centerY);
 
 		if (Math.random() < this.scoot || this.lastX == this.x || this.lastY == this.y) {
 			var destX = this.x + (Math.random() - 0.5);
@@ -29,9 +31,7 @@ class enemy extends gameObject {
 		gameObjects.splice(gameObjects.indexOf(this), 1);
 		score += Math.floor((this.scoot + this.shoot)*1000);
 	}
-	Shoot() {
-		gameObjects.push(new bullet(this.centerX, this.centerY, this.color, 5, 10, player.centerX, player.centerY));
-	}
+
 }
 
 spawners.push(function(seed){

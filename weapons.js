@@ -1,32 +1,42 @@
 class weapon {
-	constructor(shots, damage, speed, spread, bulletType, fire, hit) {
+	constructor(shots, damage, speed, spread, cooldown, ammoConsumption, continual, color, bulletType, fire, hit) {
 		this.shots = shots;
 		this.damage = damage;
 		this.speed = speed;
 		this.spread = spread;
+		this.cooldown = cooldown;
+		this.ammoConsumption = ammoConsumption;
+		this.continual = continual;
+		this.color = color;
 		this.bulletType = bulletType;
-		
+
+		this.heat = 0;
+
 		if (fire) this.Fire = fire;
 		if (hit) this.Hit = hit;
 	}
 
-	Fire(destX, destY) {
-		for (var i = 0; i < this.shots; i++) {
-			var direction = getDirection(player.centerX-2.5, player.centerY-2.5, destX, destY);
 
-			direction[0] += randomPlusOrMinus(Math.random()) * this.spread;
-			direction[1] += randomPlusOrMinus(Math.random()) * this.spread;
-			var bullet = new this.bulletType(player.centerX, player.centerY, player.color, this.speed, this.damage, direction[0], direction[1])
-			gameObjects.push(bullet);
+	Fire(startX, startY, destX, destY) {
+		if (this.heat <= 0 && player.ammo >= this.ammoConsumption) {
+			for (var i = 0; i < this.shots; i++) {
+				var direction = getDirection(startX - 2.5, startY - 2.5, destX, destY);
+
+				direction[0] += randomPlusOrMinus(Math.random()) * this.spread;
+				direction[1] += randomPlusOrMinus(Math.random()) * this.spread;
+				var bullet = new this.bulletType(startX, startY, this.color, this.speed, this.damage, direction[0], direction[1], destX, destY)
+				gameObjects.push(bullet);
+			}
+			this.heat = this.cooldown;
+			player.ammo -= this.ammoConsumption;
 		}
 	}
 
-	Hit() {
-	}
+	Hit() {}
 }
 
 class flak extends gameObject {
-	constructor(x, y, color, speed, damage, destX, destY) {
+	constructor(x, y, color, speed, damage, dirX, dirY, destX, destY) {
 		super(5, 5, x, y, color);
 		this.speed = speed;
 		this.damage = damage;

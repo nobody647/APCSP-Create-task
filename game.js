@@ -8,7 +8,8 @@ var upPressed;
 var downPressed;
 var leftPressed;
 var rightPressed;
-var mousePressed;
+var leftMousePressed;
+var rightMousePressed;
 var mouseX;
 var mouseY;
 
@@ -52,10 +53,12 @@ function setup() {
 		}
 	});
 	canvas.onmousedown = function (event) {
-		if (event.button == 0) mousePressed = true;
+		if (event.button == 0) leftMousePressed = true;
+		if (event.button == 2) rightMousePressed = true;
 	};
 	document.onmouseup = function () {
-		mousePressed = false;
+		leftMousePressed = false;
+		rightMousePressed = false;
 	};
 	canvas.onmousemove = function (event) {
 		var rect = canvas.getBoundingClientRect();
@@ -83,12 +86,12 @@ function update() {
 	}
 
 	var seed = Math.random();
-	for (var i = 0; i < spawners.length; i++){ //Does spawning of all enemies, powerups, etc.
+	for (var i = 0; i < spawners.length; i++) { //Does spawning of all enemies, powerups, etc.
 		spawners[i](seed);
 	}
 
 	drawUI();
-	ticks ++;
+	ticks++;
 }
 
 function drawUI() {
@@ -127,7 +130,7 @@ function fillBar(percent, color, x, y, width, height) {
 	context.fillStyle = oldFill; //Resets colors to old values
 }
 
-function constrain(input, min, max){ //constrains a number between a min and a max
+function constrain(input, min, max) { //constrains a number between a min and a max
 	if (input < min) input = min;
 	if (input > max) input = max;
 	return input;
@@ -158,15 +161,15 @@ function getCollisions(original) { //Returns an array of all objects that are co
 	return output;
 }
 
-function randomPlusOrMinus(input){
+function randomPlusOrMinus(input) {
 	if (Math.random() >= .5) input = -input;
 	return input;
 }
 
-function spawnEnemy(difficulty){
+function spawnEnemy(difficulty) {
 	var shoot = Math.random() * .05 + difficulty * .1;
-	var scoot = Math.random() * .01 + .002 +  difficulty * .05;
-	gameObjects.push(new enemy(20, 20, Math.random()*canvas.width, Math.random() * canvas.height, "red", 40, 10, shoot, scoot));
+	var scoot = Math.random() * .01 + .002 + difficulty * .05;
+	gameObjects.push(new enemy(20, 20, Math.random() * canvas.width, Math.random() * canvas.height, "red", 40, 10, shoot, scoot));
 }
 
 class gameObject {
@@ -216,16 +219,23 @@ class playerCharacter extends gameObject {
 		this.ctrl = ctrl;
 
 		this.reload = 0;
-		this.weapons = [new weapon(1, 10, 20, 0.05, bullet), new weapon(1, 20, 15, .05, flak)];
+		this.weapons = [new weapon(1, 15, 25, 0.05, 5, 0, true, this.color, bullet), new weapon(1, 20, 15, .05, 10, 1, false, this.color, flak)];
 
 		canvas.addEventListener("mousedown", function (event) {
 			var rect = canvas.getBoundingClientRect();
 			var x = event.clientX - rect.left;
 			var y = event.clientY - rect.top;
 
+
+			if (event.button == 0) {
+				if (!player.weapons[0].continual) {
+					player.weapons[0].Fire(player.centerX, player.centerY, mouseX, mouseY);
+				}
+			}
 			if (event.button == 2) {
-				//player.ShootFlak(x, y);
-				this.weapons[1].Fire();
+				if (!player.weapons[1].continual) {
+					player.weapons[1].Fire(player.centerX, player.centerY, mouseX, mouseY);
+				}
 			}
 			if (event.button == 1) {
 				//gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() *.05, Math.random() * .01 + .01)); //debug enemy spawning
@@ -251,7 +261,7 @@ class playerCharacter extends gameObject {
 		}
 	}
 	ShootShotgun(destX, destY, count) {
-		if (this.reload <= 0){
+		if (this.reload <= 0) {
 			//var wep = new weapon(10, 10, 10, .2, bullet, null, null);
 			//wep.Fire(destX, destY);
 		}
@@ -264,7 +274,8 @@ class playerCharacter extends gameObject {
 			if (leftPressed) this.move(this.x - this.speed, this.y);
 			if (rightPressed) this.move(this.x + this.speed, this.y);
 
-			if (mousePressed) this.weapons[0].Fire(mouseX, mouseY);
+			if (leftMousePressed && this.weapons[0].continual) this.weapons[0].Fire(player.centerX, player.centerY, mouseX, mouseY);
+			if (rightMousePressed && this.weapons[1].continual) this.weapons[1].Fire(player.centerX, player.centerY, mouseX, mouseY);
 
 		}
 
@@ -272,9 +283,14 @@ class playerCharacter extends gameObject {
 		if (this.hp <= 100) this.hp += 0.04;
 
 		var collision = getCollisions(this)[0];
-		if (collision && "equip" in collision){
+		if (collision && "equip" in collision) {
 			collision.equip(this);
 			gameObjects.splice(gameObjects.indexOf(collision), 1);
+		}
+
+
+		for (var i = 0; i < this.weapons.length; i++) {
+			this.weapons[i].heat--;
 		}
 	}
 
@@ -282,15 +298,13 @@ class playerCharacter extends gameObject {
 		context.fillStyle = "black";
 		context.font = "50px Arial";
 		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.textAlign="center"; 
-		context.fillText("Game Over", canvas.width/2, canvas.height/2);
+		context.textAlign = "center";
+		context.fillText("Game Over", canvas.width / 2, canvas.height / 2);
 		this.hp = 1000000;
 
-		setTimeout(function(){
-			alert("Your score was "+ score +". CLick OK to try again");
+		setTimeout(function () {
+			alert("Your score was " + score + ". CLick OK to try again");
 			location.reload();
 		}, 50)
 	}
 }
-
-

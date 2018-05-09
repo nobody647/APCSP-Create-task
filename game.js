@@ -11,7 +11,7 @@ var mousePressed;
 var mouseX;
 var mouseY;
 
-var score = 0;
+var score = 100;
 var ticks = 0;
 var Highscore = 0;
 var damage = 10;
@@ -187,7 +187,14 @@ function getCollisions(original) { //Returns an array of all objects that are co
 	return output;
 }
 
-function spawnEnemy(difficulty) {
+
+
+function randomPlusOrMinus(input){
+	if (Math.random() >= .5) input = -input;
+	return input;
+}
+
+function spawnEnemy(difficulty){
 	var shoot = Math.random() * .05 + difficulty * .1;
 	var scoot = Math.random() * .01 + .002 + difficulty * .05;
 	gameObjects.push(new enemy(20, 20, Math.random() * canvas.width, Math.random() * canvas.height, "red", enhealth, 10, shoot, scoot));
@@ -240,6 +247,7 @@ class playerCharacter extends gameObject {
 		this.ctrl = ctrl;
 
 		this.reload = 0;
+		this.weapons = [new weapon(1, 10, 20, 0.05, bullet), new weapon(1, 20, 15, .05, flak)];
 
 		canvas.addEventListener("mousedown", function (event) {
 			var rect = canvas.getBoundingClientRect();
@@ -247,7 +255,8 @@ class playerCharacter extends gameObject {
 			var y = event.clientY - rect.top;
 
 			if (event.button == 2) {
-				player.ShootFlak(x, y);
+				//player.ShootFlak(x, y);
+				this.weapons[1].Fire();
 			}
 			if (event.button == 1) {
 				gameObjects.push(new enemy(20, 20, player.x, player.y, "red", 40, 10, Math.random() * .05, Math.random() * .01 + .01)); //debug enemy spawning
@@ -283,7 +292,8 @@ class playerCharacter extends gameObject {
 			if (leftPressed) this.move(this.x - this.speed, this.y);
 			if (rightPressed) this.move(this.x + this.speed, this.y);
 
-			if (mousePressed) this.ShootBullet(mouseX, mouseY);
+			if (mousePressed) this.weapons[0].Fire(mouseX, mouseY);
+
 		}
 
 		if (this.ammo <= 30) this.ammo += 0.01;
@@ -313,6 +323,7 @@ class playerCharacter extends gameObject {
 }
 
 
+
 class powerUp extends gameObject {
 	constructor(x, y, color, strength, equip) {
 		super(10, 10, x, y, color);
@@ -322,3 +333,4 @@ class powerUp extends gameObject {
 	}
 
 }
+

@@ -11,11 +11,16 @@ class enemy extends gameObject {
 		var destX = x + (Math.random() - 0.5);
 		var destY = y + (Math.random() - 0.5);
 		this.AIDirection = getDirection(x, y, destX, destY);
+
+		this.target = getClosest(this, function(obj){
+			if (obj.color == color && obj.width < 10) return false; //TODO Size detection (so it doesn't target bullets)
+			return true;
+		});
 	}
 	Update() {
 		this.move(this.x + this.AIDirection[0], this.y + this.AIDirection[1]);
 		
-		if (Math.random() < this.shoot) this.weapon.Fire(this.centerX, this.centerY, player.centerX, player.centerY);
+		if (Math.random() < this.shoot) this.weapon.Fire(this.centerX, this.centerY, this.target.centerX, this.target.centerY);
 
 		if (Math.random() < this.scoot || this.lastX == this.x || this.lastY == this.y) {
 			var destX = this.x + (Math.random() - 0.5);

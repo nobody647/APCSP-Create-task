@@ -15,9 +15,6 @@ var rightMousePressed;
 var mouseX;
 var mouseY;
 
-var regen = 0.04;
-var ammoRegen = 0.002;
-
 var score = 100;
 var ticks = 0;
 
@@ -38,12 +35,16 @@ function setup() {
 	document.addEventListener('keydown', function (event) {
 		if (event.which == 38 || event.which == 87) { //up
 			upPressed = true;
+			event.preventDefault();
 		} else if (event.which == 40 || event.which == 83) { //down
 			downPressed = true;
+			event.preventDefault();
 		} else if (event.which == 37 || event.which == 65) { //left
 			leftPressed = true;
-		} else if (event.which == 39 || 68) { //right
+			event.preventDefault();
+		} else if (event.which == 39 || event.which == 68) { //right
 			rightPressed = true;
+			event.preventDefault();
 		}
 	});
 	document.addEventListener('keyup', function (event) {
@@ -60,6 +61,7 @@ function setup() {
 	canvas.onmousedown = function (event) {
 		if (event.button == 0) leftMousePressed = true;
 		if (event.button == 2) rightMousePressed = true;
+		if (gameState == "paused") gameState = "playing";
 	};
 	document.onmouseup = function () {
 		leftMousePressed = false;
@@ -74,9 +76,15 @@ function setup() {
 }
 
 function update() {
+	if (!document.hasFocus()) {
+		gameState = "paused";
+	}
 	switch (gameState) {
 		case "playing":
-			drawGame();
+			context.clearRect(0, 0, canvas.width, canvas.height); //Clear canvas
+			drawGameObjects();
+			drawPopups();
+			drawUI();
 			ticks++;
 			break;
 		case "paused":
@@ -89,9 +97,8 @@ function update() {
 
 }
 
-function drawGame() {
+function drawGameObjects() {
 	var obj;
-	context.clearRect(0, 0, canvas.width, canvas.height); //Clear canvas
 
 	for (var i = 0; i < gameObjects.length; i++) { //loops thru all gameObjects
 		obj = gameObjects[i];
@@ -110,7 +117,6 @@ function drawGame() {
 	for (var i = 0; i < spawners.length; i++) { //Does spawning of all enemies, powerups, etc.
 		spawners[i](seed);
 	}
-	drawUI();
 }
 
 function drawPaused() {
@@ -118,16 +124,16 @@ function drawPaused() {
 	context.font = "50px Arial";
 	context.textAlign = "center";
 
-	context.fillText("Paused", canvas.width/2, canvas.height/2);
+	context.fillText("Paused", canvas.width / 2, canvas.height / 2);
 }
 
-function drawGameOver(){
+function drawGameOver() {
 	context.fillStyle = "black";
 	context.font = "80px Arial";
 	context.textAlign = "center";
 
-	context.fillText("Game Over!", canvas.width/2, canvas.height/2);
-	context.fillText("Score: "+score, canvas.width/2, (canvas.height/2)+80);
+	context.fillText("Game Over!", canvas.width / 2, canvas.height / 2);
+	context.fillText("Score: " + score, canvas.width / 2, (canvas.height / 2) + 80);
 }
 
 function drawUI() {
@@ -141,10 +147,10 @@ function drawUI() {
 	context.fillStyle = "black";
 
 	context.fillText("HP", 0, canvas.height - 75);
-	fillBar(player.hp / 100, "red", 120, canvas.height - 100, 100, 30); //Draws HP indicator and bar
+	fillBar(player.hp / player.maxHP, "red", 120, canvas.height - 100, 100, 30); //Draws HP indicator and bar
 
 	context.fillText("AMMO", 0, canvas.height - 40);
-	fillBar(player.ammo / 30, "red", 120, canvas.height - 65, 100, 30); //Draws ammo indicator and bar
+	fillBar(player.ammo / player.maxAmmo, "red", 120, canvas.height - 65, 100, 30); //Draws ammo indicator and bar
 
 	context.fillText("SCORE", 0, canvas.height - 5);
 	context.fillStyle = "red";
@@ -180,6 +186,25 @@ function getDirection(startX, startY, endX, endY) { //i hate geometry. https://i
 	var hypotonoose = Math.sqrt((distX ** 2) + (distY ** 2)); //yes, i know, i cant spell
 
 	return [distX / hypotonoose, distY / hypotonoose, distX, distY];
+}
+
+function getDistance(obj1, obj2){
+	var xDiff = Math.abs(obj1.x - obj2.x);
+	var yDiff = Math.abs(obj1.y - obj2.y);
+
+	return Math.sqrt(xDiff**2 + yDiff**2);
+}
+
+function getClosest(obj, restriction){
+	var closest;
+	for (var i = 0; i < gameObjects.length; i++){
+		if (gameObjects[i] == obj) break;
+		if (!restriction(gameObjects[i])) break;
+
+		if (!closest) closest = gameObjects[i];
+		if (getDistance(obj, gameObjects[i]) < getDistance(obj, closest)) closest = gameObjects[i];
+	}
+	return closest;
 }
 
 function getCollisions(original) { //Returns an array of all objects that are colliding with the input
@@ -257,6 +282,10 @@ class playerCharacter extends gameObject {
 
 		this.reload = 0;
 		this.coins = 0;
+		this.maxHP = 100;
+		this.maxAmmo = 30;
+		this.HPRegen = 0.04;
+		this.ammoRegen = 0.002;
 		this.weapons = [new weapon(1, 15, 25, 0.05, 5, 0, true, this.color, bullet), new weapon(1, 20, 15, .05, 10, 1, false, this.color, flak)];
 
 		canvas.addEventListener("mousedown", function (event) {
@@ -281,29 +310,12 @@ class playerCharacter extends gameObject {
 			event.preventDefault();
 		});
 	}
+	set coins(newCoins) {
+		this._coins = newCoins;
+		document.getElementById("coinCount").innerHTML = "Coins: " + newCoins;
+	}
 
-	ShootFlak(destX, destY) {
-		if (this.ammo >= 1) {
-			this.ammo--;
-			gameObjects.push(new flak(5, 5, this.centerX - 2.5, this.centerY - 2.5, this.color, 15, 40, destX, destY));
-			console.log("Bang!");
-		}
-	}
-	ShootBullet(destX, destY) {
-		if (this.reload <= 0) {
-			gameObjects.push(new bullet(this.centerX - 2.5, this.centerY - 2.5, this.color, 20, 10, destX, destY));
-			console.log("Pow!");
-			this.reload = 7;
-		} else {
-			this.reload--;
-		}
-	}
-	ShootShotgun(destX, destY, count) {
-		if (this.reload <= 0) {
-			//var wep = new weapon(10, 10, 10, .2, bullet, null, null);
-			//wep.Fire(destX, destY);
-		}
-	}
+	get coins() { return this._coins; }
 
 	Update() {
 		if (this.ctrl) {
@@ -317,8 +329,8 @@ class playerCharacter extends gameObject {
 
 		}
 
-		if (this.ammo <= 30) this.ammo += ammoRegen;
-		if (this.hp <= 100) this.hp += regen;
+		if (this.ammo <= 30) this.maxAmmo += this.ammoRegen;
+		if (this.hp <= this.maxHP) this.hp += this.HPRegen;
 
 		var collision = getCollisions(this)[0];
 		if (collision && "equip" in collision) {

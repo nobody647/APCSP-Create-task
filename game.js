@@ -4,6 +4,8 @@ var gameObjects = [];
 var spawners = [];
 var player;
 
+var gameState = "playing";
+
 var upPressed;
 var downPressed;
 var leftPressed;
@@ -12,6 +14,9 @@ var leftMousePressed;
 var rightMousePressed;
 var mouseX;
 var mouseY;
+
+var regen = 0.04;
+var ammoRegen = 0.002;
 
 var score = 100;
 var ticks = 0;
@@ -69,6 +74,22 @@ function setup() {
 }
 
 function update() {
+	switch (gameState) {
+		case "playing":
+			drawGame();
+			ticks++;
+			break;
+		case "paused":
+			drawPaused();
+			break;
+		case "over":
+			drawGameOver();
+			break;
+	}
+
+}
+
+function drawGame() {
 	var obj;
 	context.clearRect(0, 0, canvas.width, canvas.height); //Clear canvas
 
@@ -89,14 +110,30 @@ function update() {
 	for (var i = 0; i < spawners.length; i++) { //Does spawning of all enemies, powerups, etc.
 		spawners[i](seed);
 	}
-
 	drawUI();
-	ticks++;
+}
+
+function drawPaused() {
+	context.fillStyle = "black";
+	context.font = "50px Arial";
+	context.textAlign = "center";
+
+	context.fillText("Paused", canvas.width/2, canvas.height/2);
+}
+
+function drawGameOver(){
+	context.fillStyle = "black";
+	context.font = "80px Arial";
+	context.textAlign = "center";
+
+	context.fillText("Game Over!", canvas.width/2, canvas.height/2);
+	context.fillText("Score: "+score, canvas.width/2, (canvas.height/2)+80);
 }
 
 function drawUI() {
 	var uiY = canvas.height - 105; //Height of UI box
 	context.font = "30px Arial";
+	context.textAlign = "start";
 
 	context.fillStyle = "rgba(200, 200, 200, 0.5)";
 	context.fillRect(0, uiY, 300, 105); //Draws box around UI elements
@@ -219,6 +256,7 @@ class playerCharacter extends gameObject {
 		this.ctrl = ctrl;
 
 		this.reload = 0;
+		this.coins = 0;
 		this.weapons = [new weapon(1, 15, 25, 0.05, 5, 0, true, this.color, bullet), new weapon(1, 20, 15, .05, 10, 1, false, this.color, flak)];
 
 		canvas.addEventListener("mousedown", function (event) {
@@ -279,8 +317,8 @@ class playerCharacter extends gameObject {
 
 		}
 
-		if (this.ammo <= 30) this.ammo += 0.002;
-		if (this.hp <= 100) this.hp += 0.04;
+		if (this.ammo <= 30) this.ammo += ammoRegen;
+		if (this.hp <= 100) this.hp += regen;
 
 		var collision = getCollisions(this)[0];
 		if (collision && "equip" in collision) {
@@ -295,16 +333,11 @@ class playerCharacter extends gameObject {
 	}
 
 	Die() {
-		context.fillStyle = "black";
-		context.font = "50px Arial";
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.textAlign = "center";
-		context.fillText("Game Over", canvas.width / 2, canvas.height / 2);
-		this.hp = 1000000;
+		gameState = "over";
 
 		setTimeout(function () {
-			alert("Your score was " + score + ". CLick OK to try again");
+			alert("Click OK to try again");
 			location.reload();
-		}, 50)
+		}, 500)
 	}
 }

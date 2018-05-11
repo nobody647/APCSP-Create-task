@@ -33,3 +33,18 @@ spawners.push(function (seed) {
 		}));
 	}
 });
+
+spawners.push(function (seed){
+	if (seed <= .001){
+		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "magenta", 1, function(obj){
+			obj.weapons[0].shots += this.strength;
+		}));
+	}
+});
+spawners.push(function (seed){
+	if (seed <= .001){
+		gameObjects.push(new powerUp(Math.random() * canvas.width, Math.random() * canvas.height, "gold", 1, function(obj){
+			obj.coins ++;
+		}));
+	}
+});
